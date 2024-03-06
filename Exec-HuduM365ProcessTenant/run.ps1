@@ -50,6 +50,12 @@ try {
             Throw 'Failed to authenticate to tenant'
         }
 
+        $huduCustomerDetails = Get-HuduAssets -asset_layout_id 101 -company_id $company_id
+        if (!($huduCustomerDetails)) {
+            $huduCustomerDetails = New-HuduAsset -Name $($company_info.nickname) -CompanyId $($company_id) -AssetLayoutId 101 -PrimarySerial $company_info.nickname
+            $huduCustomerDetails = Get-HuduAssets -asset_layout_id 101 -company_id $company_id
+        }
+
         $PeopleLayout = Get-HuduAssetLayouts -Name $env:PeopleLayoutName
         $People = Get-HuduAssets -CompanyId $company_id -AssetLayoutId $PeopleLayout.id
 
@@ -238,6 +244,8 @@ try {
 						</main>
 						</div>
 "
+        Set-HuduAsset -asset_id $huduCustomerDetails.id -Name $huduCustomerDetails.name -company_id $company_id -asset_layout_id $huduCustomerDetails.asset_layout_id -Fields @(@{ 'Organization Display Name' = $customer.DisplayName; 'Microsoft 365 Default Domain' = $defaultdomain; 'Microsoft 365 All Domains' = $customerDomains ; 'Microsoft 365 TenantID' = $customer.customerId; 'Microsoft 365 Summary' = "Users: $($CompanyResult.Users), Devices: $($CompanyResult.Devices)`r`nLast Sync: $(Get-Date -Format 'yyyy-MM-dd HH:mm')" })
+
         $Licenses = Get-BulkResultByID -Results $TenantResults -ID 'Licenses'
         if ($Licenses) {
             $pre = "<div class=`"nasa__block`"><header class='nasa__block-header'>
@@ -513,6 +521,10 @@ try {
                             }
                         }) -join ', '
 
+                    $userLicenses = $userLicenses -replace ', ,', ','
+                    $userLicenses = $userLicenses -replace ',,', ','
+                    $userLicenses = $userLicenses -replace 'Microsoft 365', 'M365'
+                   
                     $UserOneDriveDetails = $OneDriveDetails | Where-Object { $_.'Owner Principal Name' -eq $user.UserPrincipalName }
 
 
@@ -687,7 +699,19 @@ try {
                     $UserBody = "<div>$AssignedPlansBlock<br />$UserLinksBlock<br /><div class=`"nasa__content`">$($UserOverviewBlock)$($UserMailDetailsBlock)$($OneDriveBlock)$($UserMailSettingsBlock)$($UserPoliciesBlock)</div><div class=`"nasa__content`">$($UserDevicesDetailsBlock)</div><div class=`"nasa__content`">$($UserGroupsBlock)</div></div>"
 
                     $UserAssetFields = @{
-                        microsoft_365 = $UserBody
+                        microsoft_365            = $UserBody
+                        'IT Managed User'        = $true
+                        'Job Title'              = $($User.jobTitle)
+                        'Department'             = $($User.Department)
+                        'User Name'              = $($User.displayName)
+                        'Primary Email'          = $($User.mail)
+                        'Phone'                  = $($User.businessPhones -join ', ')
+                        'Mobile Phone'           = $($User.mobilePhone)
+                        'M365 AD Directory Sync' = $($User.OnPremisesSyncEnabled)
+                        'M365 License Summary'   = $($userLicenses)
+                        'M365 Account Enabled'   = $($User.accountEnabled)
+                        'M365 UserPrincipalName' = $($User.userPrincipalName)
+                        'M365 Email Aliases'     = $aliases
                     }
 
 
@@ -896,14 +920,14 @@ try {
 			 </div>"
 
         try {
-            $null = Set-HuduMagicDash -Title "Microsoft 365 - $($customer.DisplayName)" -company_name $company_name -Message "$($licensedUsers.count) Licensed Users" -Icon 'fab fa-microsoft' -Content $body -Shade 'success'
+            $null = Set-HuduMagicDash -Title "Microsoft 365 - $($customer.DisplayName)" -company_name $company_name -Message "Users: $($CompanyResult.Users), Devices: $($CompanyResult.devices)`r`nLastSync: $(Get-Date -Format 'yyyy-MM-dd HH:mm')" -Icon 'fab fa-microsoft' -Content $body -Shade 'success'
         } catch {
             $CompanyResult.Errors.add("Company: Failed to add Magic Dash to Company: $_")
         }
 
         if ($CreateInOverview -eq $true) {
             try {
-                $null = Set-HuduMagicDash -Title "$($customer.DisplayName)" -company_name $OverviewCompany -Message "$($licensedUsers.count) Licensed Users" -Icon 'fab fa-microsoft' -Content $body -Shade 'success'
+                $null = Set-HuduMagicDash -Title "$($customer.DisplayName)" -company_name $OverviewCompany -Message "Users: $($CompanyResult.Users), Devices: $($CompanyResult.devices)`r`nLastSync: $(Get-Date -Format 'yyyy-MM-dd HH:mm')" -Icon 'fab fa-microsoft' -Content $body -Shade 'success'
             } catch {
                 $CompanyResult.Errors.add("Company: Failed to add Magic Dash to Overview: $_")
             }
