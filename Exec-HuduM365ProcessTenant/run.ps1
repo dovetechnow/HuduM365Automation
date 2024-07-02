@@ -23,9 +23,6 @@ $ExcludeSerials = $env:ExcludeSerials -split ','
 $LicenseLookup = Get-LicenseLookup
 $AssignedMap = Get-AssignedMap
 $AssignedNameMap = Get-AssignedNameMap
-$PSAUserURL = $env:PSAUserURL
-$RMMDeviceURL = $env:RMMDeviceURL
-$RMMRemoteURL = $env:RMMRemoteURL
 $EnableCIPP = [System.Convert]::ToBoolean($env:EnableCIPP)
 $CIPPURL = $env:CIPPURL
 try {
@@ -577,12 +574,6 @@ try {
 					$UserLinksFormatted.add((Get-LinkBlock -URL "https://admin.teams.microsoft.com/users/$($User.id)/account?delegatedOrg=$($Customer.defaultDomainName)" -Icon 'fas fa-users' -Title 'Teams Admin'))
 					$UserLinksFormatted.add((Get-LinkBlock -URL "https://endpoint.microsoft.com/$($Customer.defaultDomainName)/#blade/Microsoft_AAD_IAM/UserDetailsMenuBlade/Profile/userId/$($User.ID)" -Icon 'fas fa-laptop' -Title 'EPM (User)'))
 					$UserLinksFormatted.add((Get-LinkBlock -URL "https://endpoint.microsoft.com/$($Customer.defaultDomainName)/#blade/Microsoft_AAD_IAM/UserDetailsMenuBlade/Devices/userId/$($User.ID)" -Icon 'fas fa-laptop' -Title 'EPM (Devices)'))
-					if ($HuduUser) {
-						$HaloCard = $HuduUser.cards | Where-Object { $_.integrator_name -eq 'halo' }
-						if ($HaloCard) {
-							$UserLinksFormatted.add((Get-LinkBlock -URL "$($PSAUserUrl)$($HaloCard.sync_id)" -Icon 'far fa-id-card' -Title 'Halo PSA'))
-						}
-					}
 					$UserLinksBlock = "<div>Management Links</div><div class='o365'>$($UserLinksFormatted -join '')$($CIPPLinksFormatted -join '')</div>"
 					$UserBody = "<div>$AssignedPlansBlock<br />$UserLinksBlock<br /><div class=`"nasa__content`">$($UserOverviewBlock)$($UserMailDetailsBlock)$($OneDriveBlock)$($UserMailSettingsBlock)$($UserPoliciesBlock)</div><div class=`"nasa__content`">$($UserDevicesDetailsBlock)</div><div class=`"nasa__content`">$($UserGroupsBlock)</div></div>"
 					$UserAssetFields = @{
@@ -702,18 +693,6 @@ try {
 				}
 				[System.Collections.Generic.List[PSCustomObject]]$DeviceLinksFormatted = @()
 				$DeviceLinksFormatted.add((Get-LinkBlock -URL "https://endpoint.microsoft.com/$($Customer.defaultDomainName)/#blade/Microsoft_Intune_Devices/DeviceSettingsBlade/overview/mdmDeviceId/$($Device.id)" -Icon 'fas fa-laptop' -Title 'Endpoint Manager'))
-				if ($HuduDevice) {
-					$DRMMCard = $HuduDevice.cards | Where-Object { $_.integrator_name -eq 'dattormm' }
-					if ($DRMMCard) {
-						$DeviceLinksFormatted.add((Get-LinkBlock -URL "$($RMMDeviceURL)$($DRMMCard.data.id)" -Icon 'fas fa-laptop-code' -Title 'Datto RMM'))
-						$DeviceLinksFormatted.add((Get-LinkBlock -URL "$($RMMRemoteURL)$($DRMMCard.data.id)" -Icon 'fas fa-desktop' -Title 'Datto RMM Remote'))
-					}
-					$ManageCard = $HuduDevice.cards | Where-Object { $_.integrator_name -eq 'cw_manage' }
-					if ($ManageCard) {
-						$DeviceLinksFormatted.add((Get-LinkBlock -URL $ManageCard.data.managementLink -Icon 'fas fa-laptop-code' -Title 'CW Automate'))
-						$DeviceLinksFormatted.add((Get-LinkBlock -URL $ManageCard.data.remoteLink -Icon 'fas fa-desktop' -Title 'CW Control'))
-					}
-				}
 				$DeviceLinksBlock = "<div>Management Links</div><div class='o365'>$($DeviceLinksFormatted -join '')</div>"
 				$DeviceIntuneDetailshtml = "<div><div>$DeviceLinksBlock<br /><div class=`"nasa__content`">$($DeviceOverviewBlock)$($DeviceHardwareBlock)$($DeviceEnrollmentBlock)$($DevicePolicyBlock)$($DeviceAppsBlock)$($DeviceGroupsBlock)</div></div>"
 				$DeviceAssetFields = @{
